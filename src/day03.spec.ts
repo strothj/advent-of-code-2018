@@ -1,76 +1,79 @@
 export {};
 
-const claimRegex = /#\d+ @ (\d+),(\d+): (\d+)x(\d+)/;
+const claimRegex = /#(\d+) @ (\d+),(\d+): (\d+)x(\d+)/;
 
 const testCase = `#1 @ 1,3: 4x4
 #2 @ 3,1: 4x4
 #3 @ 5,5: 2x2`.split("\n");
 
 it("returns expected test case value", () => {
-  expect(part1(testCase)).toBe(4);
+  const solution = solve(testCase);
+  expect(solution.overlappedCount).toBe(4);
+  expect(solution.nonOverlapped).toBe(3);
 });
 
 it("returns expected value for problem input", () => {
-  expect(part1(getPuzzleInput())).toBe(111935);
+  const solution = solve(getPuzzleInput());
+  expect(solution.overlappedCount).toBe(111935);
+  expect(solution.nonOverlapped).toBe(650);
 });
 
-function part1(claims: string[]): number {
+function solve(rawClaims: string[]) {
   const fabric = Array.from({ length: 1000 }, () =>
-    Array.from({ length: 1000 }, () => FabricSquare.Empty),
+    Array.from({ length: 1000 }, () => ({
+      occupier: null as number | null,
+      counted: false,
+    })),
   );
 
+  const nonOverlappedIds = new Set<number>();
+  const claims = rawClaims.map(c => {
+    const claim = parseClaim(c);
+    nonOverlappedIds.add(claim.id);
+    return claim;
+  });
+
   let overlappedCount = 0;
-  for (let i = 0; i < claims.length; i += 1) {
-    const parsedClaim = parseClaim(claims[i]);
-    for (
-      let y = parsedClaim.y;
-      y < parsedClaim.y + parsedClaim.height;
-      y += 1
-    ) {
-      for (
-        let x = parsedClaim.x;
-        x < parsedClaim.x + parsedClaim.width;
-        x += 1
-      ) {
-        let nextValue: FabricSquare;
-        switch (fabric[y][x]) {
-          case FabricSquare.Empty: {
-            nextValue = FabricSquare.Occupied;
-            break;
-          }
-          case FabricSquare.Occupied: {
-            overlappedCount += 1;
-            nextValue = FabricSquare.Overlapped;
-            break;
-          }
-          default:
-            nextValue = FabricSquare.Overlapped;
+  for (let i = 0; i < rawClaims.length; i += 1) {
+    const claim = claims[i];
+    for (let y = claim.y; y < claim.y + claim.height; y += 1) {
+      for (let x = claim.x; x < claim.x + claim.width; x += 1) {
+        const square = fabric[y][x];
+
+        if (square.occupier !== null) {
+          nonOverlappedIds.delete(square.occupier);
+          nonOverlappedIds.delete(claim.id);
         }
-        fabric[y][x] = nextValue;
+
+        if (square.occupier === null) {
+          square.occupier = claim.id;
+          continue;
+        }
+
+        if (!square.counted) {
+          square.counted = true;
+          overlappedCount += 1;
+        }
       }
     }
   }
 
-  return overlappedCount;
+  const nonOverlapped = Array.from(nonOverlappedIds.keys())[0];
+  return { overlappedCount, nonOverlapped };
 
   function parseClaim(claim: string) {
     const match = claimRegex.exec(claim);
-    if (!match || match.length !== 5) {
+    if (!match || match.length !== 6) {
       throw new Error(`Unexpected claim regex result:, ${match}`);
     }
     return {
-      x: parseInt(match[1], 10),
-      y: parseInt(match[2], 10),
-      width: parseInt(match[3], 10),
-      height: parseInt(match[4], 10),
+      id: parseInt(match[1], 10),
+      x: parseInt(match[2], 10),
+      y: parseInt(match[3], 10),
+      width: parseInt(match[4], 10),
+      height: parseInt(match[5], 10),
     };
   }
-}
-
-enum FabricSquare {
-  Empty = "Empty",
-  Occupied = "Occupied",
-  Overlapped = "Overlapped",
 }
 
 function getPuzzleInput() {
