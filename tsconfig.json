@@ -11,6 +11,7 @@
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
     "esModuleInterop": true
   },
   "include": ["./src/**/*"]

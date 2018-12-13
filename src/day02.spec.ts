@@ -340,3 +340,5 @@ function getDay2Input() {
     .split("\n")
     .map(s => s.trim());
 }
+
+export {};
